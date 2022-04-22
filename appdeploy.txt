@@ -1,0 +1,62 @@
+---
+- hosts: slave
+  become: yes
+  gather_facts: yes
+  vars:
+       git_repo_url: https://github.com/BL-AniketChile/NodeJs-API.git
+       repo_path: /opt/
+       repo_branch: master
+       pkname: git
+       pkname1: nginx
+       pkname2: nodejs
+       pkname3: npm
+       npm_path: /usr/bin
+       pkname4: mongodb
+  tasks:
+         - name: update the packages
+           apt:
+                update_cache: yes
+         - name: install git on server
+           action: apt name='{{pkname}}' state=present
+         - name: install nginx on server
+           action: apt name='{{pkname1}}' state=present
+         - name: install nodejs on server
+           action: apt name='{{pkname2}}' state=present
+         - name: install mongodb
+           action: apt name='{{pkname4}}' state=present
+         - name: install npm
+           action: apt name='{{pkname3}}' state=present
+         - name: clone repository
+           git:
+                repo: '{{git_repo_url}}'
+                dest: '{{repo_path}}'
+                version: '{{repo_branch}}'
+                accept_hostkey: yes
+                update: no
+         - name: Start application
+           shell: "nohup npm start &"
+           args:
+               chdir: "/opt"
+         - name: remove default file from sites-available
+           file:
+                 path: /etc/nginx/sites-available/default
+                 state: absent
+         - name: remove default file from sites-enabled
+           file:
+                 path: /etc/nginx/sites-enabled/default
+                 state: absent
+         - name: copy default to sites-available
+           copy: src=/home/ubuntu/ansiblepractice/default dest=/etc/nginx/sites-available/
+         - name: copy nodejs file to node-server
+           copy: src=/home/ubuntu/ansiblepractice/nodejs dest=/etc/nginx/sites-available/
+         - name: create a symbolic link
+           file:
+                 src: /etc/nginx/sites-available/nodejs
+                 dest: /etc/nginx/sites-enabled/nodejs
+                 state: link
+         - name: Restart nginx service
+           service:
+                   name: nginx
+                   state: restarted
+
+
